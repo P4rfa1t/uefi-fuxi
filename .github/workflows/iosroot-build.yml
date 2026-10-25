@@ -81,7 +81,7 @@ jobs:
           done
           sudo find "$R/System" "$R/usr" "$R/bin" "$R/sbin" -xdev \( -type f -o -type d \) \
             ! -user 0 -print | head -20 || true
-          sudo ls -ln "$R/System/Library/Caches/com.apple.dyld" | head -5
+          sudo ls -ln "$R/System/Library/Caches/com.apple.dyld" | head -5 || true
       - name: Detach and report
         run: |
           set -euxo pipefail
