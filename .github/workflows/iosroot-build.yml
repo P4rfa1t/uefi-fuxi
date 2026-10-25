@@ -72,6 +72,16 @@ jobs:
           PLIST
           sed -i '' 's/^          //' /tmp/systembag.kb
           sudo install -m 0600 -o 0 -g 0 /tmp/systembag.kb "$R/private/var/keybags/systembag.kb"
+      - name: Normalise ownership of the system trees
+        run: |
+          set -euxo pipefail
+          R=/Volumes/iOSRoot
+          for d in System usr bin sbin Applications Library private/preboot; do
+            sudo chown -R 0:0 "$R/$d" || true
+          done
+          sudo find "$R/System" "$R/usr" "$R/bin" "$R/sbin" -xdev \( -type f -o -type d \) \
+            ! -user 0 -print | head -20
+          sudo ls -ln "$R/System/Library/Caches/com.apple.dyld" | head -5
       - name: Detach and report
         run: |
           set -euxo pipefail
