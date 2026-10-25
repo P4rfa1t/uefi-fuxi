@@ -23,7 +23,6 @@ jobs:
           sudo hdiutil attach -nobrowse -readonly -mountpoint /tmp/sysos dmg/087-86593-047.dmg
           sudo hdiutil attach -nobrowse -readonly -mountpoint /tmp/appos dmg/087-86715-047.dmg
           sudo ls -ln /tmp/os | head
-          sudo stat -c %u /tmp/os/System
       - name: Create the HFS+ image and copy the system
         run: |
           set -euxo pipefail
