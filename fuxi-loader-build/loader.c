@@ -203,6 +203,9 @@ static const char *loader_boot(void)
 
 	/* Everything was written with the MMU and caches off; drop any stale I-cache lines too. */
 	__asm__ volatile("dsb sy; ic iallu; dsb sy; isb" ::: "memory");
+ extern void touch_power(unsigned);
+ /* Touch needs the RPMh rails voted before XNU takes over. */
+ touch_power(1);
  monitor_report[MON_STAGE]=8;
  __asm__ volatile("dsb sy" ::: "memory");
 	((xnu_entry_t)entry_pa)(ba_pa);
