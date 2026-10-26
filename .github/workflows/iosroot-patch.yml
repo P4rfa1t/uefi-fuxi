@@ -1,0 +1,49 @@
+name: iosroot patch (linux)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install hfs tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq hfsprogs gzip
+          sudo modprobe hfsplus || true
+          grep -i hfsplus /proc/filesystems || echo "hfsplus not loaded"
+      - name: Fetch the current root image artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          gh run download --repo ${{ github.repository }} --name iosroot --dir art
+          ls -l art
+          cd art && gunzip -c *.gz > ../root.img
+          ls -l ../root.img
+      - name: Mount, install firmware, unmount
+        run: |
+          set -euxo pipefail
+          sudo mkdir -p /mnt/iosroot
+          sudo mount -t hfsplus -o rw,force root.img /mnt/iosroot
+          sudo mkdir -p /mnt/iosroot/usr/local/share/fuxi/wlan
+          sudo install -m 0644 wlan-fw/amss.bin    /mnt/iosroot/usr/local/share/fuxi/wlan/amss.bin
+          sudo install -m 0644 wlan-fw/amss20.bin  /mnt/iosroot/usr/local/share/fuxi/wlan/amss20.bin
+          sudo install -m 0644 wlan-fw/bd_m3gl.elf /mnt/iosroot/usr/local/share/fuxi/wlan/bd_m3gl.elf
+          sudo ls -l /mnt/iosroot/usr/local/share/fuxi/wlan
+          sudo chown -R 0:0 /mnt/iosroot/usr/local/share/fuxi
+          sync
+          sudo umount /mnt/iosroot
+      - name: Compress and upload
+        run: |
+          set -euxo pipefail
+          gzip -9 -c root.img > iosroot.img.gz
+          ls -lh iosroot.img.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iosroot-wlan
+          path: iosroot.img.gz
+          retention-days: 7
