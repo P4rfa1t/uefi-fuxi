@@ -6,6 +6,11 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 180
     steps:
+      - name: Fetch the reference root tweaks
+        uses: actions/checkout@v4
+        with:
+          repository: bangprovn/ios-fuxi
+          path: src
       - name: Download the iPhone X IPSW
         run: |
           curl -L --retry 3 -o ipsw.zip "https://updates.cdn-apple.com/2025FallFCS/fullrestores/122-77006/1158E502-D76D-4226-AA06-ED5E30CD1111/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw"
@@ -82,6 +87,10 @@ jobs:
           sudo find "$R/System" "$R/usr" "$R/bin" "$R/sbin" -xdev \( -type f -o -type d \) \
             ! -user 0 -print | head -20 || true
           sudo ls -ln "$R/System/Library/Caches/com.apple.dyld" | head -5 || true
+      - name: Apply the SWEET root tweaks
+        run: |
+          set -euxo pipefail
+          sudo python3 src/tools/sweet-root-tweaks.py /Volumes/iOSRoot
       - name: Detach and report
         run: |
           set -euxo pipefail
