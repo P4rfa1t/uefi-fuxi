@@ -1,6 +1,10 @@
 name: iosroot build
 on:
   workflow_dispatch:
+  inputs:
+    metal_stack:
+      description: 'Stage FuxiMetal + Turnip into the root (yes/no)'
+      default: 'no'
 jobs:
   build:
     runs-on: macos-14
@@ -91,6 +95,28 @@ jobs:
         run: |
           set -euxo pipefail
           sudo python3 src/tools/sweet-root-tweaks.py /Volumes/iOSRoot
+      - name: Stage the Metal usermode stack
+        if: ${{ inputs.metal_stack == 'yes' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/metal /tmp/mesa
+          gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-metal --dir /tmp/metal
+          gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-mesa --dir /tmp/mesa
+          ls -l /tmp/metal /tmp/mesa
+          sudo python3 src/tools/stage-fuxi-metal.py /Volumes/iOSRoot \
+            /tmp/mesa/libvulkan_freedreno.dylib \
+            /tmp/metal/FuxiMetal.bundle \
+            /tmp/metal/fuxi-metal-smoke \
+            --translator /tmp/metal/libmetal2vulkan.dylib \
+            --metallib /tmp/metal/metal-smoke.metallib \
+            --source /tmp/metal/metal2vulkan-source.tar.gz \
+            --conf /tmp/metal/metal-smoke.conf \
+            --clients /tmp/metal/metal-clients.conf \
+            --ca-smoke /tmp/metal/fuxi-ca-smoke \
+            --ca-conf /tmp/metal/ca-smoke.conf \
+            --enable-backboardd
       - name: Detach and report
         run: |
           set -euxo pipefail
