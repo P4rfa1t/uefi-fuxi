@@ -24,11 +24,19 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p art metal mesa tools
-          gh run download --repo ${{ github.repository }} --name iosroot-wlan --dir art
-          gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-metal --dir metal
-          gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-mesa --dir mesa
-          gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-tools --dir tools
-          ls -lh art metal mesa tools
+          echo MARK-root
+          timeout 1200 gh run download --repo ${{ github.repository }} --name iosroot-wlan --dir art
+          du -sh art
+          echo MARK-metal
+          timeout 600 gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-metal --dir metal
+          du -sh metal
+          echo MARK-mesa
+          timeout 600 gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-mesa --dir mesa
+          du -sh mesa
+          echo MARK-tools
+          timeout 600 gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-tools --dir tools
+          du -sh tools
+          echo MARK-done
       - name: Mount and stage
         run: |
           set -euxo pipefail
