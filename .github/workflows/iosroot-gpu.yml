@@ -1,0 +1,60 @@
+name: iosroot gpu stage
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: bangprovn/ios-fuxi
+          path: src
+      - name: Install hfs tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq hfsprogs
+          sudo modprobe hfsplus || true
+      - name: Fetch artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          mkdir -p art metal mesa tools
+          gh run download --repo ${{ github.repository }} --name iosroot-wlan --dir art
+          gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-metal --dir metal
+          gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-mesa --dir mesa
+          gh run download --repo hanzi123-bilp/ios-fuxi --name fuxi-tools --dir tools
+          ls -lh art metal mesa tools
+      - name: Mount and stage
+        run: |
+          set -euxo pipefail
+          cd art && gunzip -c *.gz > ../root.img && cd ..
+          ls -l root.img
+          sudo mkdir -p /mnt/iosroot
+          sudo mount -t hfsplus -o rw,force root.img /mnt/iosroot
+          sudo python3 src/tools/stage-fuxi-metal.py /mnt/iosroot \
+            mesa/libvulkan_freedreno.dylib \
+            metal/FuxiMetal.bundle \
+            metal/fuxi-metal-smoke \
+            --translator metal/libmetal2vulkan.dylib \
+            --metallib metal/metal-smoke.metallib \
+            --source metal/metal2vulkan-source.tar.gz \
+            --conf metal/metal-smoke.conf \
+            --clients metal/metal-clients.conf \
+            --ca-smoke metal/fuxi-ca-smoke \
+            --ca-conf metal/ca-smoke.conf \
+            --enable-backboardd
+          sudo ls -l /mnt/iosroot/usr/local/lib /mnt/iosroot/System/Library/Extensions
+          sync
+          sudo umount /mnt/iosroot
+      - name: Compress
+        run: gzip -9 -c root.img > iosroot.img.gz && ls -lh iosroot.img.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iosroot-gpu
+          path: iosroot.img.gz
+          retention-days: 7
