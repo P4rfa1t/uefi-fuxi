@@ -204,6 +204,10 @@ static const char *loader_boot(void)
 	/* Everything was written with the MMU and caches off; drop any stale I-cache lines too. */
 	__asm__ volatile("dsb sy; ic iallu; dsb sy; isb" ::: "memory");
  extern void touch_power(unsigned);
+ extern void gpu_probe(unsigned limit);
+ /* Bare-metal GPU bring-up: PAS runs from EL1 where TEE can reach our memory. */
+ gpu_probe(17);
+
  /* Touch needs the RPMh rails voted before XNU takes over. */
  touch_power(1);
  monitor_report[MON_STAGE]=8;
