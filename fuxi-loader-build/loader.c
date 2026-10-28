@@ -208,7 +208,7 @@ static const char *loader_boot(void)
 
  /* Touch needs the RPMh rails voted before XNU takes over. */
  touch_power(1);
- { extern void loader_gpu_probe(void); loader_gpu_probe(); } /* bare-metal PAS/ZAP bring-up before XNU */
+
  monitor_report[MON_STAGE]=8;
  __asm__ volatile("dsb sy" ::: "memory");
 	((xnu_entry_t)entry_pa)(ba_pa);
