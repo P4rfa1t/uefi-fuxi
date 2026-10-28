@@ -29,6 +29,8 @@ jobs:
           cp "${{ github.workspace }}/ours/fuxi-loader-build/loader.c" loader.c
           sed -i 's/^static void touch_power(unsigned stage)/void touch_power(unsigned stage)/' ../fuxi-probe/probe.c
           grep -n "void touch_power" ../fuxi-probe/probe.c
+          printf '\nvoid loader_gpu_probe(void){ gpu_probe(17); }\n' >> ../fuxi-probe/probe.c
+          grep -n "loader_gpu_probe" ../fuxi-probe/probe.c
           sed -i 's/^ b.ne fatal/ nop \/* ABL drops to EL1 on this unit *\//' start.S
           grep -n "CurrentEL" -A2 start.S | head -6
           grep -n "Wno-error" build.sh | head -2
