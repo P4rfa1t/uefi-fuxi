@@ -5,6 +5,8 @@
 #include "console.h"
 #include "../fuxi-probe/monitor.h"
 #include "../fuxi-probe/gpu-handoff.h"
+/* The GPU probe lives in gpu.c; include it here so the loader can run it. */
+#include "../fuxi-probe/gpu.c"
 void probe_main(uintptr_t fdt);
 uint64_t probe_fdt_address(void);
 uint32_t probe_fdt_bytes(void);
@@ -204,12 +206,11 @@ static const char *loader_boot(void)
 	/* Everything was written with the MMU and caches off; drop any stale I-cache lines too. */
 	__asm__ volatile("dsb sy; ic iallu; dsb sy; isb" ::: "memory");
  extern void touch_power(unsigned);
- extern void gpu_probe(unsigned limit);
  /* Bare-metal GPU bring-up: PAS runs from EL1 where TEE can reach our memory. */
- gpu_probe(17);
 
  /* Touch needs the RPMh rails voted before XNU takes over. */
  touch_power(1);
+ gpu_probe(17); /* bare-metal PAS/ZAP bring-up before XNU */
  monitor_report[MON_STAGE]=8;
  __asm__ volatile("dsb sy" ::: "memory");
 	((xnu_entry_t)entry_pa)(ba_pa);
