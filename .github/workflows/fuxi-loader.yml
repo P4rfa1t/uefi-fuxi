@@ -8,7 +8,7 @@ jobs:
       - name: Fetch the reference loader
         uses: actions/checkout@v4
         with:
-          repository: bangprovn/ios-fuxi
+          repository: hanzi123-bilp/ios-fuxi
           path: src
       - name: Fetch our inputs
         uses: actions/checkout@v4
