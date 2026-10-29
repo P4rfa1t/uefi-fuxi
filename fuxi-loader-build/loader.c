@@ -21,6 +21,7 @@ struct payload {
 	char magic[8];
 	uint32_t version, nsegs;
 	uint64_t virt_base, entry_va, adt_off, adt_size, kernel_end;
+unsigned gpu_probe_rc;
 	uint64_t phys_base, mem_size;
 	char cmdline[BOOT_LINE_LENGTH];
 	struct payload_seg segs[];
@@ -169,7 +170,7 @@ static const char *loader_boot(void)
  monitor_report[MON_STAGE]=6;
 	/* Bare-metal GPU bring-up (FAST + SHM bridge) BEFORE the ADT copy so it
  * cannot clobber the root extent table, which lives just behind the kernel. */
- { extern void loader_gpu_probe(void); loader_gpu_probe(); }
+ { extern unsigned loader_gpu_probe(void); gpu_probe_rc = loader_gpu_probe(); }
 /* ADT, then boot_args, behind the kernel; everything below topOfKernelData is ours. */
 	uintptr_t adt_pa = p->kernel_end + pa_of_va_base;
 	copy64(adt_pa, rd_start + p->adt_off, p->adt_size);
@@ -192,6 +193,17 @@ static const char *loader_boot(void)
 	ba->Video.v_depth = 32;
 	ba->deviceTreeP = adt_pa - pa_of_va_base;	/* xnu reads it with the MMU on: a VA */
 	ba->deviceTreeLength = (uint32_t)p->adt_size;
+	/* Loader has no console; carry the GPU probe result into the kernel log
+	 * by appending it to the command line, which XNU prints at boot. */
+	{ static const char hex[] = "0123456789abcdef";
+	  char tail[32]; int n = 0;
+	  tail[n++]=' '; tail[n++]='g'; tail[n++]='p'; tail[n++]='u'; tail[n++]='_'; tail[n++]='r';
+	  tail[n++]='c'; tail[n++]='=';
+	  if (gpu_probe_rc > 15) { tail[n++] = hex[(gpu_probe_rc >> 4) & 15]; }
+	  tail[n++] = hex[gpu_probe_rc & 15]; tail[n] = 0;
+	  if (ba->CommandLine[0]) { unsigned L = 0; while (ba->CommandLine[L] && L < 1000) L++;
+	    for (int k = 0; k < n && L + 1 < 1000; k++) ba->CommandLine[L++] = tail[k]; ba->CommandLine[L] = 0; }
+	}
 	for (int i = 0; i < BOOT_LINE_LENGTH; i++)
 		ba->CommandLine[i] = p->cmdline[i];
 	ba->memSizeActual = p->mem_size;
