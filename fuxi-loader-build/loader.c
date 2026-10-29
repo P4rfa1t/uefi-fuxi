@@ -167,7 +167,10 @@ static const char *loader_boot(void)
 	con_hex2("SEGS", "n=", p->nsegs, "end=", p->kernel_end + pa_of_va_base);
 
  monitor_report[MON_STAGE]=6;
-	/* ADT, then boot_args, behind the kernel; everything below topOfKernelData is ours. */
+	/* Bare-metal GPU bring-up (FAST + SHM bridge) BEFORE the ADT copy so it
+ * cannot clobber the root extent table, which lives just behind the kernel. */
+ { extern void loader_gpu_probe(void); loader_gpu_probe(); }
+/* ADT, then boot_args, behind the kernel; everything below topOfKernelData is ours. */
 	uintptr_t adt_pa = p->kernel_end + pa_of_va_base;
 	copy64(adt_pa, rd_start + p->adt_off, p->adt_size);
 	uintptr_t ba_pa = (adt_pa + p->adt_size + PAGE_16K - 1) & ~(PAGE_16K - 1);
