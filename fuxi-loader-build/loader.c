@@ -169,7 +169,16 @@ static const char *loader_boot(void)
  monitor_report[MON_STAGE]=6;
 	/* Bare-metal GPU bring-up (FAST + SHM bridge) BEFORE the ADT copy so it
  * cannot clobber the root extent table, which lives just behind the kernel. */
- { extern void loader_gpu_probe(void); loader_gpu_probe(); }
+ /* The loader has no console: paint the GPU bring-up result on the panel.
+ * green = the ZAP shader loaded, red = it did not (0xb8000000, 1080x2400). */
+ { extern void loader_gpu_probe(void); extern unsigned loader_gpu_zap(void);
+   loader_gpu_probe();
+   unsigned zr = loader_gpu_zap();
+   volatile unsigned *fb = (volatile unsigned *)0xb8000000UL;
+   unsigned col = zr ? 0x0000c000u : 0x00c00000u;
+   for (unsigned yy = 0; yy < 300; yy++)
+     for (unsigned xx = 0; xx < 300; xx++) fb[(unsigned long)yy * 1080u + xx] = col;
+ }
 /* ADT, then boot_args, behind the kernel; everything below topOfKernelData is ours. */
 	uintptr_t adt_pa = p->kernel_end + pa_of_va_base;
 	copy64(adt_pa, rd_start + p->adt_off, p->adt_size);
