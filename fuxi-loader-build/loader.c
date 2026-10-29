@@ -176,8 +176,8 @@ static const char *loader_boot(void)
    unsigned zr = loader_gpu_zap();
    volatile unsigned *fb = (volatile unsigned *)0xb8000000UL;
    unsigned col = zr ? 0x0000c000u : 0x00c00000u;
-   for (unsigned yy = 0; yy < 300; yy++)
-     for (unsigned xx = 0; xx < 300; xx++) fb[(unsigned long)yy * 1080u + xx] = col;
+   for (unsigned long i = 0; i < 1080UL * 2400UL; i++) fb[i] = col;
+   for (volatile unsigned long w = 0; w < 400000000UL; w++) { }
  }
 /* ADT, then boot_args, behind the kernel; everything below topOfKernelData is ours. */
 	uintptr_t adt_pa = p->kernel_end + pa_of_va_base;
