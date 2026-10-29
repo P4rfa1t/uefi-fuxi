@@ -21,7 +21,6 @@ struct payload {
 	char magic[8];
 	uint32_t version, nsegs;
 	uint64_t virt_base, entry_va, adt_off, adt_size, kernel_end;
-unsigned gpu_zap_rc;
 	uint64_t phys_base, mem_size;
 	char cmdline[BOOT_LINE_LENGTH];
 	struct payload_seg segs[];
@@ -170,8 +169,7 @@ static const char *loader_boot(void)
  monitor_report[MON_STAGE]=6;
 	/* Bare-metal GPU bring-up (FAST + SHM bridge) BEFORE the ADT copy so it
  * cannot clobber the root extent table, which lives just behind the kernel. */
- { extern void loader_gpu_probe(void); extern unsigned loader_gpu_zap(void);
-  loader_gpu_probe(); gpu_zap_rc = loader_gpu_zap(); }
+ { extern void loader_gpu_probe(void); loader_gpu_probe(); }
 /* ADT, then boot_args, behind the kernel; everything below topOfKernelData is ours. */
 	uintptr_t adt_pa = p->kernel_end + pa_of_va_base;
 	copy64(adt_pa, rd_start + p->adt_off, p->adt_size);
@@ -193,14 +191,6 @@ static const char *loader_boot(void)
 	ba->Video.v_height = FB_H;
 	ba->Video.v_depth = 32;
 	ba->deviceTreeP = adt_pa - pa_of_va_base;	/* xnu reads it with the MMU on: a VA */
-	{ static const char hx[] = "0123456789abcdef";
-	  char tl[24]; int n2 = 0;
-	  tl[n2++]=' '; tl[n2++]='g'; tl[n2++]='p'; tl[n2++]='u'; tl[n2++]='_';
-	  tl[n2++]='z'; tl[n2++]='a'; tl[n2++]='p'; tl[n2++]='=';
-	  tl[n2++] = hx[(gpu_zap_rc >> 4) & 15u]; tl[n2++] = hx[gpu_zap_rc & 15u]; tl[n2]=0;
-	  int L2 = 0; while (L2 < (int)sizeof(ba->CommandLine) - 1 && ba->CommandLine[L2]) L2++;
-	  for (int k2 = 0; k2 < n2 && L2 < (int)sizeof(ba->CommandLine) - 1; k2++) ba->CommandLine[L2++] = tl[k2];
-	  ba->CommandLine[L2] = 0; }
 	ba->deviceTreeLength = (uint32_t)p->adt_size;
 	for (int i = 0; i < BOOT_LINE_LENGTH; i++)
 		ba->CommandLine[i] = p->cmdline[i];
