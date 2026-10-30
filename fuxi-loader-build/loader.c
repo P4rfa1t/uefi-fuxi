@@ -175,8 +175,13 @@ static const char *loader_boot(void)
    loader_gpu_probe();
    unsigned zr = loader_gpu_zap();
    volatile unsigned *fb = (volatile unsigned *)0xb8000000UL;
-   unsigned col = zr ? 0x0000c000u : 0x00c00000u;
-   for (unsigned long i = 0; i < 1080UL * 2400UL; i++) fb[i] = col;
+   extern unsigned g5_bridge_state; unsigned bs = g5_bridge_state;
+   unsigned left = (bs == 0) ? 0x0000c000u : 0x000000c0u;
+   unsigned right = zr ? 0x0000c000u : 0x00c00000u;
+   for (unsigned long y = 0; y < 2400UL; y++) {
+     for (unsigned long x = 0; x < 540UL; x++) fb[y * 1080UL + x] = left;
+     for (unsigned long x = 540UL; x < 1080UL; x++) fb[y * 1080UL + x] = right;
+   }
    for (volatile unsigned long w = 0; w < 400000000UL; w++) { }
  }
 /* ADT, then boot_args, behind the kernel; everything below topOfKernelData is ours. */
