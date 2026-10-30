@@ -175,11 +175,13 @@ static const char *loader_boot(void)
    loader_gpu_probe();
    unsigned zr = loader_gpu_zap();
    volatile unsigned *fb = (volatile unsigned *)0xb8000000UL;
-   extern unsigned g5_bridge_state; unsigned bs = g5_bridge_state;
-   unsigned left = (bs == 0) ? 0x0000c000u : 0x000000c0u;
+   extern unsigned g5_bridge_en, g5_bridge_cr; unsigned en = g5_bridge_en, cr = g5_bridge_cr;
+   unsigned c_en = (en == 0) ? 0x0000c000u : 0x000000c0u;
+   unsigned c_cr = (cr == 0) ? 0x0000c000u : 0x000000c0u;
    unsigned right = zr ? 0x0000c000u : 0x00c00000u;
    for (unsigned long y = 0; y < 2400UL; y++) {
-     for (unsigned long x = 0; x < 540UL; x++) fb[y * 1080UL + x] = left;
+     unsigned lcol = (y < 1200UL) ? c_en : c_cr;
+     for (unsigned long x = 0; x < 540UL; x++) fb[y * 1080UL + x] = lcol;
      for (unsigned long x = 540UL; x < 1080UL; x++) fb[y * 1080UL + x] = right;
    }
    for (volatile unsigned long w = 0; w < 400000000UL; w++) { }
